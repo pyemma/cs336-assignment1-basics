@@ -12,9 +12,7 @@ import regex as re
 from sortedcontainers import SortedDict
 from typing import BinaryIO
 
-
-# this is the regex used by GPT2
-PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+from cs336_basics.constants import PAT
 
 # function copied over from pretokenization_example.py
 def find_chunk_boundaries(
@@ -86,8 +84,8 @@ def pretokenization(
     # count
     counter = defaultdict(int)
     for idx, doc in enumerate(docs):
-        matches_ierator = re.finditer(PAT, doc)
-        for match in matches_ierator:
+        matches_iterator = re.finditer(PAT, doc)
+        for match in matches_iterator:
             s = match.group()
             # encode the tokens to bytes, convert to tuple of bytes
             counter[tuple(bytes([b]) for b in s.encode("utf-8"))] += 1
@@ -264,12 +262,15 @@ def train_bpe(
 if __name__ == "__main__":
     import pickle
 
-    # input_path = "/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/data/TinyStoriesV2-GPT4-train.txt"
-    input_path = "/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/data/owt_train.txt"
+    input_path = "/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/data/TinyStoriesV2-GPT4-train.txt"
+    # input_path = "/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/data/owt_train.txt"
     
-    vocab, bpe_pairs_merged = train_bpe(input_path, 32000, ["<|endoftext|>"])
+    vocab, bpe_pairs_merged = train_bpe(input_path, 10000, ["<|endoftext|>"])
 
     with open("/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/result/vocab-owt.pkl", "wb+") as file:
         pickle.dump(vocab, file)
+    
+    with open("/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/result/merges.pkl", "wb+") as file:
+        pickle.dump(bpe_pairs_merged, file)
 
     

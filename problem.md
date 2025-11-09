@@ -40,3 +40,6 @@ Program: cs336_basics/train_bpe.py
 - (a): total running time is around 18 minutes, total number of pretoken 6601892, peak memory usage is around 7GB, the longest token is `b'----------------------------------------------------------------'`
 - (b): TODO
 
+## BPE tokenizer
+
+TODO
