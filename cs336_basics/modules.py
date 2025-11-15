@@ -211,3 +211,78 @@ class CausalMultiHeadAttentionWithRope(nn.Module):
         y = scale_dot_product_attention(q, k, v, mask)
         y = y.transpose(-3, -2).contiguous().view(-1, seq_len, self.d_model)
         return self.o_proj(y)
+
+ATTR = [
+    "attn.q_proj.weight",
+    "attn.k_proj.weight",
+    "attn.v_proj.weight",
+    "attn.output_proj.weight",
+    "ln1.weight",
+    "ln2.weight",
+    "ffn.w1.weight",
+    "ffn.w2.weight",
+    "ffn.w3.weight",
+]
+
+
+class TransformerBlock(nn.Module):
+
+    def __init__(self, d_model: int, num_heads: int, d_ff: int, max_seq_len: int, theta: float):
+        super().__init__()
+
+        self.ln1 = RMSNorm(d_model)
+        self.attn = CausalMultiHeadAttentionWithRope(d_model, num_heads, max_seq_len, theta)
+        self.ln2 = RMSNorm(d_model)
+        self.ffn = SwiGLU(d_model, d_ff)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x + self.attn(self.ln1(x))
+        x = x + self.ffn(self.ln2(x))
+        return x
+
+    def load_weights(self, weights):
+        """
+        A helper function to load weight from the weights dict
+        """
+        self.attn.q_proj.w.data = weights["attn.q_proj.weight"]
+        self.attn.k_proj.w.data = weights["attn.k_proj.weight"]
+        self.attn.v_proj.w.data = weights["attn.v_proj.weight"]
+        self.attn.o_proj.w.data = weights["attn.output_proj.weight"]
+        self.ln1.g.data = weights["ln1.weight"]
+        self.ln2.g.data = weights["ln2.weight"]
+        self.ffn.w1.w.data = weights["ffn.w1.weight"]
+        self.ffn.w2.w.data = weights["ffn.w2.weight"]
+        self.ffn.w3.w.data = weights["ffn.w3.weight"]
+
+
+class TransformerLM(nn.Module):
+
+    def __init__(self, d_model: int, num_heads: int, d_ff: int, context_length: int, theta: float, vocab_size: int, num_layers: int):
+        super().__init__()
+
+        self.token_embeddings = Embedding(vocab_size, d_model)
+        self.layers = nn.ModuleList(
+            [
+                TransformerBlock(d_model, num_heads, d_ff, context_length, theta)
+                for _ in range(num_layers)
+            ]
+        )
+        self.ln_final = RMSNorm(d_model)
+        self.lm_head = Linear(d_model, vocab_size)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.token_embeddings(x)
+        for layer in self.layers:
+            x = layer(x)
+        x = self.ln_final(x)
+        return self.lm_head(x)
+
+    def load_weights(self, weights):
+        self.token_embeddings.table.data = weights['token_embeddings.weight']
+        for idx, layer in enumerate(self.layers):
+            block_weights = {
+                attn: weights[f"layers.{idx}.{attn}"] for attn in ATTR
+            }
+            layer.load_weights(block_weights)
+        self.ln_final.g.data = weights['ln_final.weight']
+        self.lm_head.w.data = weights['lm_head.weight']

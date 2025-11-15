@@ -43,3 +43,34 @@ Program: cs336_basics/train_bpe.py
 ## BPE tokenizer
 
 TODO
+
+## Transformer Accounting
+
+- (a) We could have a breakdown of the parameters in each component, we are using single-precision floating point and thus it would take 4 bytes
+  - Embedding: $50257 \times 1600 = 80411200$
+  - For each transform block, we have 2 layer norm, 1 feed forward network and 1 causal self causal attention block
+    - Self causal attention block
+      - 4 linear projection, $4 \times 1600 \times 1600 = 10240000$ total parameters
+      - 1 rope, $\times 1024 \times 1600  = 1638400$ non-learnable parameters
+    - Layer norm
+      - linear projection, $1600$ parameters
+    - Feed froward network
+      - 3 linear projection, $3 \times 1600 \times 6400 = 30720000$ total parameters
+    - Total parameters in a transform block: $10240000 + 1600 \times 2 + 30720000 = 40963200$
+  - For final layer norm, it is $1600$ parameters
+  - For final projection head, it is the same as embedding $80411200$
+  - Total parameters are $80411200 + 40963200 \times 48 + 1600 + 80411200 = 2127057600$
+  - Store this in single precision floating points, gives us about 8GB total memory
+- (b) If we only take a look at the matrix multiplication, then the embedding lookup part could be ignored
+  - Self causal attention
+    - 3 matrix multiplication, $3 \times 2 \times 1024 \times 1600 \times 1600 = 15728640000$ FLOPs
+    - Query and key go through rope, contains 4 element-wise matrix multiplication and 2 element-wise matrix addition, $6 \times 1024 \times 800 = 4915200$, we could ignore this
+    - Sdpa, query and key matrix multi on each head, $25 \times 2 \times 1024 \times 64 \times 1024 = 3355443200$ FLOPs; attention scores matrix multi with value, $25 \times 2 \times 1024 \times 1024 \times 64 = 3355443200$ FLOPs
+    - Final output projection $2 \times 1024 \times 1600 \times 1600 = 5242880000$ FLOPs
+    - Total self causal attention FLOPs $15728640000 + 3355443200 + 3355443200 + 5242880000 = 27682406400$
+  - Layer norm only contains element-wise matrix multi, ignore
+  - Feed forward network, 3 matrix multi, $3 \times 2 \times 1024 \times 1600 \times 6400 = 62914560000$ FLOPs
+  - Total FLOPs in a transformer block $27682406400 + 62914560000 = 90596966400$
+  - Final prediction head $2 \times 1024 \times 1600 \times 50257 = 164682137600$
+  - Total FLOPs $90596966400 \times 48 + 164682137600 = 4513336524800$  
+- (c) The feed forward part actually takes the majority of the FLOPs
