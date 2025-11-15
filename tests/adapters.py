@@ -14,10 +14,12 @@ from cs336_basics.modules import (
     CausalMultiHeadAttention,
     CausalMultiHeadAttentionWithRope,
     Embedding,
-    SwiGLU,
     Linear,
     RMSNorm,
     RotaryPositionEmbedding,
+    SwiGLU,
+    TransformerBlock,
+    TransformerLM,
     scale_dot_product_attention,
     softmax,
 )
@@ -306,7 +308,9 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    raise NotImplementedError
+    block = TransformerBlock(d_model, num_heads, d_ff, max_seq_len, theta)
+    block.load_weights(weights)
+    return block(in_features)
 
 
 def run_transformer_lm(
@@ -388,7 +392,17 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
+    lm = TransformerLM(
+        d_model=d_model, 
+        num_heads=num_heads, 
+        d_ff=d_ff, 
+        context_length=context_length, 
+        theta=rope_theta, 
+        vocab_size=vocab_size, 
+        num_layers=num_layers
+    )
+    lm.load_weights(weights)
+    return lm(in_indices)
 
 
 def run_rmsnorm(
