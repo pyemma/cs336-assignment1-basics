@@ -267,10 +267,10 @@ if __name__ == "__main__":
     
     vocab, bpe_pairs_merged = train_bpe(input_path, 10000, ["<|endoftext|>"])
 
-    with open("/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/result/vocab-owt.pkl", "wb+") as file:
+    with open("/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/result/vocab-tinystories.pkl", "wb+") as file:
         pickle.dump(vocab, file)
     
-    with open("/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/result/merges.pkl", "wb+") as file:
+    with open("/Users/yangpei/Desktop/side-projects/cs336/cs336-assignment1-basics/result/merges-tinystories.pkl", "wb+") as file:
         pickle.dump(bpe_pairs_merged, file)
 
     
