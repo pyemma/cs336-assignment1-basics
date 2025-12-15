@@ -15,4 +15,5 @@ def get_batch(x: np.array, batch_size: int, context_length: int, device: str = "
     inp = x[inp_indices]
     tgt_indices = inp_indices + 1  # offset by one
     tgt = x[tgt_indices]
-    return torch.from_numpy(inp).to(device), torch.from_numpy(tgt).to(device)
+    return torch.from_numpy(inp).to(torch.long).to(device), \
+        torch.from_numpy(tgt).to(torch.long).to(device)

@@ -1,5 +1,6 @@
 from itertools import chain
 import os
+import pickle
 from typing import BinaryIO, Iterable
 import regex as re
 
@@ -39,7 +40,11 @@ class Tokenizer:
 
     @classmethod
     def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None):
-        pass
+        with open(vocab_filepath, "rb") as f:
+            vocab = pickle.load(f)
+        with open(merges_filepath, "rb") as f:
+            merges = pickle.load(f)
+        return cls(vocab, merges, special_tokens)
 
     def merge_bpe(self, bpe: list[bytes]) -> list[bytes]:
         """

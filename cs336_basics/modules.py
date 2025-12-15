@@ -171,7 +171,7 @@ class CausalMultiHeadAttention(nn.Module):
         k = self.k_proj(x).view(-1, seq_len, self.num_heads, self.d_model // self.num_heads).transpose(-3, -2)
         v = self.v_proj(x).view(-1, seq_len, self.num_heads, self.d_model // self.num_heads).transpose(-3, -2)
 
-        mask = torch.tril(torch.ones(seq_len, seq_len, dtype=torch.bool)).unsqueeze(0)  # 1, seq, seq
+        mask = torch.tril(torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device)).unsqueeze(0)  # 1, seq, seq
 
         y = scale_dot_product_attention(q, k, v, mask)
         y = y.transpose(-3, -2).contiguous().view(-1, seq_len, self.d_model)
@@ -199,7 +199,7 @@ class CausalMultiHeadAttentionWithRope(nn.Module):
         k = self.k_proj(x).view(-1, seq_len, self.num_heads, self.d_model // self.num_heads).transpose(-3, -2)
         v = self.v_proj(x).view(-1, seq_len, self.num_heads, self.d_model // self.num_heads).transpose(-3, -2)
 
-        mask = torch.tril(torch.ones(seq_len, seq_len, dtype=torch.bool)).unsqueeze(0)  # 1, seq, seq
+        mask = torch.tril(torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device)).unsqueeze(0)  # 1, seq, seq
 
         if token_positions is None:
             token_positions = torch.arange(seq_len)
